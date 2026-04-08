@@ -1,159 +1,116 @@
-# Swift App Template
+# InternTracker
 
-A starter template for iOS development students to build and run a Swift-backed web app — entirely in **GitHub Codespaces**, no Xcode or macOS required.
+**InternTracker** est une application web CRUD développée entièrement en Swift côté serveur. Elle permet de gérer et suivre ses candidatures de stage : ajout, consultation, modification, suppression, classement par catégorie, recherche, filtrage et tri.
 
-The included demo is a simple **Task List** app: a web server written in Swift that persists data with SQLite and renders an interactive UI in the browser.
-
----
-
-## 1. Using This Template
-
-1. Click the **"Use this template"** button at the top of this repository.
-2. Give your new repository a name and click **"Create repository"**.
-
-> Do **not** clone this repo directly — always start from your own copy created via the template.
+Le projet est réalisé dans le cadre du cours de développement iOS (2026) à l'Université Paris 8, en utilisant le framework **Hummingbird 2** et **SQLite** pour la persistance des données.
 
 ---
 
-## 2. Opening in GitHub Codespaces
+## Fonctionnalités
 
-1. In **your new repository**, click the green **"Code"** button.
-2. Select the **"Codespaces"** tab and click **"Create codespace on main"**.
-3. Wait for the container to build — this pulls the Swift 6.2 Docker image and runs `swift package resolve` automatically. This takes a few minutes the first time.
-
-Once the container is ready, VS Code opens in the browser with Swift fully configured.
+- **Tableau de bord** avec statistiques en temps réel (total, en attente, entretien, acceptée, refusée) et barre de progression du taux de réponse.
+- **CRUD complet** : créer, lire, modifier et supprimer des candidatures.
+- **Page de détails** dédiée pour chaque candidature (`/detail/:id`), avec formulaire de modification intégré.
+- **Deuxième modèle de données** : gestion des catégories (Développement Web, IA, Systèmes Embarqués, Cybersécurité, Data Science, DevOps, Mobile, Autre) avec CRUD indépendant et relation clé étrangère.
+- **Recherche et filtrage** : barre de recherche (entreprise, poste) et filtre par statut via clause `WHERE`.
+- **Tri** : par date, par entreprise (A–Z) ou par statut via paramètres de requête.
+- **Validation côté serveur** : messages d'erreur affichés si les champs obligatoires sont vides.
+- **Interface soignée** : design sombre personnalisé avec icônes Material Symbols, animations CSS, mise en page responsive.
 
 ---
 
-## 3. Build & Run
+## Modèle de données
 
-Open the integrated terminal and run:
+### `InternshipApplication` (8 champs)
+
+| Champ         | Type      | Description                                  |
+|---------------|-----------|----------------------------------------------|
+| `id`          | `Int64?`  | Clé primaire auto-incrémentée                |
+| `company`     | `String`  | Nom de l'entreprise                          |
+| `position`    | `String`  | Intitulé du poste                            |
+| `categoryId`  | `Int64?`  | Clé étrangère vers la table `categories`     |
+| `status`      | `String`  | Statut : En attente, Entretien, Acceptée, Refusée |
+| `appliedDate` | `String`  | Date de candidature (YYYY-MM-DD)             |
+| `notes`       | `String`  | Notes et commentaires libres                 |
+| `url`         | `String`  | Lien vers l'offre d'emploi                   |
+
+### `Category` (2 champs)
+
+| Champ  | Type     | Description                       |
+|--------|----------|-----------------------------------|
+| `id`   | `Int64?` | Clé primaire auto-incrémentée     |
+| `name` | `String` | Nom de la catégorie (unique)      |
+
+Les deux structs sont conformes aux protocoles `Codable` et `Sendable`.
+
+---
+
+## Routes exposées
+
+| Méthode | Route                    | Description                                      |
+|---------|--------------------------|--------------------------------------------------|
+| `GET`   | `/`                      | Tableau de bord — liste toutes les candidatures (supporte `?search=`, `?status=`, `?sort=`) |
+| `GET`   | `/add`                   | Formulaire de création d'une nouvelle candidature |
+| `POST`  | `/create`                | Créer une candidature (avec validation serveur)   |
+| `GET`   | `/detail/:id`            | Page de détails d'une candidature                 |
+| `POST`  | `/update/:id`            | Modifier une candidature existante                |
+| `POST`  | `/delete/:id`            | Supprimer une candidature                         |
+| `GET`   | `/categories`            | Page de gestion des catégories                    |
+| `POST`  | `/categories/create`     | Ajouter une nouvelle catégorie                    |
+| `POST`  | `/categories/delete/:id` | Supprimer une catégorie                           |
+
+**Total : 9 routes** (3 GET + 6 POST).
+
+---
+
+## Structure du projet
+
+```
+Sources/App/
+├── main.swift        # Point d'entrée — configuration du serveur et définition des routes
+├── Models.swift      # Modèles de données : InternshipApplication, Category, ApplicationStatus
+├── Database.swift    # Couche SQLite — création des tables et fonctions CRUD typées
+└── Views.swift       # Génération HTML côté serveur (layout, dashboard, formulaires, détails, 404)
+```
+
+---
+
+## Compilation et exécution
+
+Ouvrir le projet dans GitHub Codespaces, puis dans le terminal :
 
 ```bash
 ./build.sh
-```
-
-This resolves dependencies and compiles the project. When it finishes, start the server:
-
-```bash
 ./run.sh
 ```
 
-Codespaces will detect that port **8080** is now in use and show a pop-up — click **"Open in Browser"** (or find it under the **Ports** tab). You should see the Task List app running live.
+L'application sera accessible sur le port **8080**. Codespaces proposera d'ouvrir le navigateur automatiquement.
 
-> To stop the server press `Ctrl + C` in the terminal.
-
----
-
-## 4. Project Structure
-
-```
-.devcontainer/
-  devcontainer.json     # Codespaces container config (Swift 6.2, VS Code extensions, port forwarding)
-Sources/App/
-  main.swift            # Entry point — server setup and HTTP route definitions
-  Models.swift          # Data model: the TaskItem struct
-  Database.swift        # SQLite setup and all database queries
-  Views.swift           # HTML page rendering (returns pages to the browser)
-Package.swift           # Swift package definition — dependencies and build targets
-build.sh                # Helper script: resolve + compile
-run.sh                  # Helper script: start the server
-```
+Pour arrêter le serveur : `Ctrl + C`.
 
 ---
 
-## 5. How It Works
+## Bonus implémentés
 
-```
-Browser  →  HTTP Request
-             ↓
-         main.swift  (Hummingbird router matches the route)
-             ↓
-         Database.swift  (SQLite.swift reads/writes db.sqlite3)
-             ↓
-         Views.swift  (builds an HTML string from the data)
-             ↓
-         HTTP Response  →  Browser renders the page
-```
-
-| Layer | File | Technology |
-|---|---|---|
-| Web server & routing | `main.swift` | [Hummingbird 2](https://github.com/hummingbird-project/hummingbird) |
-| Data model | `Models.swift` | Swift `struct` |
-| Database | `Database.swift` | [SQLite.swift](https://github.com/stephencelis/SQLite.swift) |
-| UI / HTML | `Views.swift` | [Pico CSS](https://picocss.com) |
+| Bonus                              | Points |
+|------------------------------------|--------|
+| Recherche et filtrage (`WHERE`)    | +5     |
+| Tri par champ                      | +3     |
+| Page de détails (`/detail/:id`)    | +5     |
+| Validation serveur + messages d'erreur | +3 |
+| Deuxième modèle (catégories + relation) | +5 |
+| Interface personnalisée (dark theme, icônes, animations, responsive) | +3 |
 
 ---
 
-## 6. Your Assignment
+## Technologies
 
-Your job is to extend this template into your own app. Here are the four files you will work in and what to change:
-
-### `Models.swift` — Define your data
-Replace or extend `TaskItem` with a struct that represents the data your app works with.
-```swift
-struct TaskItem: Codable, Sendable {
-    let id: Int64?
-    var title: String
-    var isCompleted: Bool
-    // Add your own fields here, e.g.:
-    // var dueDate: String
-    // var priority: Int
-}
-```
-
-### `Database.swift` — Read and write data
-Update the SQLite table columns to match your model, and add functions for any new queries your app needs (e.g. filtering, deleting, updating fields).
-
-### `Views.swift` — Change the UI
-Modify `renderIndex(items:)` to display your data the way you want. You can add new `render...()` functions for additional pages.
-
-### `main.swift` — Add routes
-Register new routes to handle new pages or actions. Follow the existing pattern:
-```swift
-router.get("/my-page") { _, _ -> HTML in
-    // fetch data, return a View
-}
-
-router.post("/my-action") { request, context -> Response in
-    // handle form submission
-}
-```
+- **Swift 6.2** — Langage principal
+- **Hummingbird 2** — Framework web côté serveur
+- **SQLite.swift** — ORM typé pour SQLite (aucune chaîne SQL brute)
+- **Material Symbols Rounded** — Icônes
+- **CSS custom** — Design sombre, responsive, avec animations
 
 ---
 
-## 7. Key Swift Concepts in This Project
-
-| Concept | Where to see it |
-|---|---|
-| `struct` | `Models.swift`, `Database.swift`, `Views.swift` |
-| `async/await` | `main.swift` — `app.runService()`, request handlers |
-| Closures | `main.swift` — route handler blocks `{ request, context in ... }` |
-| Protocol conformance | `Views.swift` — `HTML: ResponseGenerator` |
-| `throws` / `try` | `Database.swift` — all database calls |
-| Extensions | `Database.swift` — `Connection: @unchecked Sendable` |
-
----
-
-## 8. Troubleshooting
-
-**Port 8080 is already in use**
-Another process is using the port. In the terminal run:
-```bash
-lsof -i :8080
-kill <PID>
-```
-Then start the server again with `./run.sh`.
-
-**`error: 'App' product not found` or build errors on first open**
-The package dependencies may not have resolved yet. Run:
-```bash
-swift package resolve
-./build.sh
-```
-
-**Codespace is slow to start**
-The first build after creating a Codespace downloads the Swift Docker image (~1 GB). Subsequent starts are much faster because the image is cached.
-
-**Changes not showing in the browser**
-The server must be restarted to pick up code changes. Press `Ctrl + C`, run `./build.sh`, then `./run.sh` again.
+*Aymen Raki — L3 ISEI, Université Paris 8, 2026*
