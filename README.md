@@ -90,19 +90,6 @@ Pour arrêter le serveur : `Ctrl + C`.
 
 ---
 
-## Bonus implémentés
-
-| Bonus                              | Points |
-|------------------------------------|--------|
-| Recherche et filtrage (`WHERE`)    | +5     |
-| Tri par champ                      | +3     |
-| Page de détails (`/detail/:id`)    | +5     |
-| Validation serveur + messages d'erreur | +3 |
-| Deuxième modèle (catégories + relation) | +5 |
-| Interface personnalisée (dark theme, icônes, animations, responsive) | +3 |
-
----
-
 ## Technologies
 
 - **Swift 6.2** — Langage principal
